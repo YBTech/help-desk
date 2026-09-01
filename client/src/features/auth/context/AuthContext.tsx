@@ -1,8 +1,6 @@
 import { createContext, useState, type ReactNode } from "react";
 import type { User } from "../types/auth.types";
 
-const url = "http://localhost:4000/api/users";
-
 interface AuthContextType {
   user: User | null;
   login: (user: User) => void;
