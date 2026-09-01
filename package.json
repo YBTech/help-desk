@@ -1,0 +1,16 @@
+{
+  "name": "help-desk",
+  "version": "1.0.0",
+  "description": "A full-stack MERN helpdesk ticket tracker application.",
+  "main": "index.js",
+  "scripts": {
+    "install:all": "npm install && cd client && npm install && cd ../server && npm install",
+    "dev": "concurrently \"cd server && npm run dev\" \"cd client && npm run dev\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
