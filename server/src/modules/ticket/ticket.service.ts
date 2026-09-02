@@ -1,5 +1,5 @@
 import { TicketRepository } from "./ticket.repository.js";
-import { NotImplementedError } from "../../shared/errors.js";
+import { NotFoundError, NotImplementedError, ConflictError } from "../../shared/errors.js";
 import {
   TicketFilters,
   CreateTicketDto,
@@ -43,7 +43,14 @@ export class TicketService {
   //   data: ticket
   // }
   async getTicketById(id: number) {
-    throw new NotImplementedError("TODO: Implement backend logic for: getTicketById in ticket.service.ts");
+    const ticket = await this.repository.findById(id);
+    if (!ticket) {
+      throw new NotImplementedError(`Ticket with ID ${id} not found.`);
+    }
+    return {
+      success: true,
+      data: ticket,
+    };
   }
 
   // 🔴 Todo: Create a new ticket
@@ -56,7 +63,13 @@ export class TicketService {
   //   message: "Ticket created successfully"
   // }
   async createTicket(data: CreateTicketDto) {
-    throw new NotImplementedError("TODO: Implement backend logic for: createTicket in ticket.service.ts");
+    const slaDeadline = this.calculateSlaDeadline(data.priority);
+    const ticket = await this.repository.create({ ...data, slaDeadline });
+    return {
+      success: true,
+      data: ticket,
+      message: "Ticket created successfully",
+    };
   }
 
   // 🔴 Todo: Update an existing ticket
@@ -69,7 +82,16 @@ export class TicketService {
   //   message: "Ticket updated successfully"
   // }
   async updateTicket(id: number, data: UpdateTicketDto) {
-    throw new NotImplementedError("TODO: Implement backend logic for: updateTicket in ticket.service.ts");
+    const ticket = await this.repository.findById(id);
+    if (!ticket) {
+      throw new NotImplementedError(`Ticket with ID ${id} not found.`);
+    }
+    const updatedTicket = await this.repository.update(id, data);
+    return {
+      success: true,
+      data: updatedTicket,
+      message: "Ticket updated successfully",
+    };
   }
 
   // 🔴 Todo: Update ticket status
@@ -86,7 +108,49 @@ export class TicketService {
   //   message: "Ticket status updated successfully"
   // }
   async updateTicketStatus(id: number, newStatus: TicketStatus) {
-    throw new NotImplementedError("TODO: Implement backend logic for: updateTicketStatus in ticket.service.ts");
+    const existingTicket = await this.repository.findById(id);
+
+    if (!existingTicket) {
+      throw new NotFoundError(`Ticket with ID ${id} was not found`);
+    }
+
+    const currentStatus = existingTicket.status as TicketStatus;
+
+    const validTransition = this.isValidStatusTransition(
+      currentStatus,
+      newStatus,
+    );
+
+    if (!validTransition) {
+      throw new ConflictError(
+        `Cannot change ticket status from "${currentStatus}" to "${newStatus}"`,
+      );
+    }
+
+    const timestamps: {
+      resolvedAt?: Date;
+      closedAt?: Date;
+    } = {};
+
+    if (newStatus === "resolved") {
+      timestamps.resolvedAt = new Date();
+    }
+
+    if (newStatus === "closed") {
+      timestamps.closedAt = new Date();
+    }
+
+    const updatedTicket = await this.repository.updateStatus(
+      id,
+      newStatus,
+      timestamps,
+    );
+
+    return {
+      success: true,
+      data: updatedTicket,
+      message: "Ticket status updated successfully",
+    };
   }
 
   // 🔴 Todo: Check if ticket exists
@@ -98,7 +162,17 @@ export class TicketService {
   //   message: "Ticket deleted successfully"
   // }
   async deleteTicket(id: number) {
-    throw new NotImplementedError("TODO: Implement backend logic for: deleteTicket in ticket.service.ts");
+    const ticket = await this.repository.exists(id);
+    if (!ticket) {
+      throw new NotFoundError(`Ticket with ID ${id} was not found`);
+    }
+
+    await this.repository.delete(id);
+
+    return {
+      success: true,
+      message: "Ticket deleted successfully",
+    };
   }
 
   private calculateSlaDeadline(priority: string): Date {

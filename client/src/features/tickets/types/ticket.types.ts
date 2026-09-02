@@ -27,3 +27,13 @@ export interface Ticket {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface CreateTicketData {
+  title: string;
+  description: string;
+  priority: TicketPriority;
+  category: TicketCategory;
+  reporterName: string;
+  reporterEmail: string;
+  assigneeId?: number | null;
+}

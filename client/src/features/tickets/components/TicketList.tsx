@@ -10,9 +10,7 @@ import styles from "./TicketList.module.css";
 export function TicketList() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("search") || "");
-  // Todo 🔴: use "useDebouncedValue" hook to debounce the search input
-  // expected behavior:
-  // the search input should not trigger a new fetch on every keystroke, but only after the user has stopped typing for a short period of time (e.g., 300ms)
+  const debouncedSearch = useDebouncedValue(search, 300);
 
   const page = parseInt(searchParams.get("page") || "1");
   const status = searchParams.get("status") || "";
@@ -22,11 +20,10 @@ export function TicketList() {
   const sortBy = searchParams.get("sortBy") || "createdAt";
   const sortOrder = searchParams.get("sortOrder") || "desc";
 
-  // fully implemented custom hook for data fetching
   const { tickets, loading, error, pagination } = useTickets({
     page,
     limit: 10,
-    search,
+    search: debouncedSearch,
     status,
     priority,
     category,
@@ -35,7 +32,6 @@ export function TicketList() {
     sortOrder,
   });
 
-  // fully implemented useEffect to sync state with URL params
   useEffect(() => {
     const params: Record<string, string> = {};
     if (search) params.search = search;
@@ -49,21 +45,17 @@ export function TicketList() {
     setSearchParams(params);
   }, [search, status, priority, category, assigneeId, sortBy, sortOrder, page]);
 
-  // fully implemented function to update URL params
   const handleFilterChange = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams);
     if (value) {
       params.set(key, value);
     } else {
-      // fully implemented logic for deleting empty params
       params.delete(key);
     }
-    // fully implemented logic for reset page on filter change
     params.set("page", "1");
     setSearchParams(params);
   };
 
-  // fully implemented pagination handler
   const handlePageChange = (newPage: number) => {
     const params = new URLSearchParams(searchParams);
     params.set("page", newPage.toString());
@@ -75,7 +67,6 @@ export function TicketList() {
       <div className={styles.header}>
         <h1>Tickets</h1>
         <Link to="/tickets/new" className={styles.createButton}>
-          {/* fully implemented Link for navigation */}
           Create Ticket
         </Link>
       </div>
@@ -92,32 +83,15 @@ export function TicketList() {
         onFilterChange={handleFilterChange}
       />
 
-      {/* Todo 🔴: implement loading and error handling */}
       <div className={styles.ticketGrid}>
-        {/* 🔴 TODO: if tickets is empty show "No tickets found", otherwise render the list of tickets using TicketCard component */}
-        <TicketCard
-          ticket={{
-            id: 1,
-            title: "title",
-            description: "description",
-            status: "open",
-            priority: "urgent",
-            category: "bug",
-            reporterName: "reporter name",
-            reporterEmail: "reporter email",
-            assigneeId: null,
-            slaDeadline: new Date(
-              Date.now() + 2 * 60 * 60 * 1000,
-            ).toISOString(),
-            resolvedAt: null,
-            closedAt: null,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          }}
-        />
+        {loading && <LoadingSpinner />}
+        {!loading && error && <div className={styles.error}>{error}</div>}
+        {!loading && !error && tickets.length === 0 && (
+          <div className={styles.empty}>No tickets found</div>
+        )}
+        {!loading && !error && tickets.map((ticket) => <TicketCard key={ticket.id} ticket={ticket} />)}
       </div>
 
-      {/* Fully implemented pagination logics */}
       {pagination && pagination.totalPages > 1 && (
         <div className={styles.pagination}>
           <button

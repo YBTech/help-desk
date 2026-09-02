@@ -1,17 +1,46 @@
+import { formatDuration } from "../../../shared/utils/formatters";
+import type { DashboardStats } from "../types/dashboard.types";
 import styles from "./StatsPanel.module.css";
 
+const mockStats = [
+  { title: "Open", value: 12, color: "#3498db" },
+  { title: "In Progress", value: 8, color: "#e67e22" },
+  { title: "Resolved", value: 24, color: "#2ecc71" },
+  { title: "Urgent", value: 3, color: "#e74c3c" },
+];
+
+interface StatsPanelProps {
+  stats: DashboardStats;
+}
+
 // 🔴 TODO: Accept stats prop (DashboardStats) and use its properties dynamically
-// colors to use: #3498db, #e67e22, #2ecc71, #e74c3c
-export function StatsPanel() {
+export function StatsPanel({ stats }: StatsPanelProps) {
   return (
     <div className={styles.grid}>
-      {/* // 🔴 TODO: refer to dashboard.png, render StatCard components */}
-      <div>Placeholder, replace this with StatCard components</div>
+        <StatCard
+          title="Total Tickets"
+          value={stats.totalTickets}
+          color="#3498db"
+        />
+        <StatCard
+          title="Open Tickets"
+          value={stats.openTickets}
+          color="#e67e22"
+        />
+        <StatCard
+          title="Average Resolution Time (s)"
+          value={formatDuration(stats.avgResolutionTimeSeconds)}
+          color="#2ecc71"
+        />
+        <StatCard
+          title="SLA Breaches"
+          value={stats.slaBreachCount}
+          color="#e74c3c"
+        />
     </div>
   );
 }
 
-// Do not modify
 function StatCard({
   title,
   value,

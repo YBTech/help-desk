@@ -1,5 +1,10 @@
 import type { UserRole } from "../types/user.types";
 import styles from "./UserList.module.css";
+import { useState, useMemo } from "react";
+import { useUsers } from "../hooks/useUser";
+
+type RoleFilter = UserRole | "";
+type SortOrder = "asc" | "desc";
 
 export function UserList() {
   // 🔴 TODO:
@@ -11,12 +16,40 @@ export function UserList() {
   // 5. use useMemo hook to optimize the rendering performance
   // bonus: create a useUsers custom hook to encapsulate the fetching/filtering/sorting logic and state management
 
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>("");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
+  const { users, loading, error } = useUsers();
+
+  const filteredAndSortedUsers = useMemo(() => {
+    let filteredUsers = users;
+
+    if (roleFilter) {
+      filteredUsers = filteredUsers.filter((user) => user.role === roleFilter);
+    }
+
+    return filteredUsers.sort((a, b) => {
+      if (sortOrder === "asc") {
+        return a.displayName.localeCompare(b.displayName);
+      } else {
+        return b.displayName.localeCompare(a.displayName);
+      }
+    });
+  }, [users, roleFilter, sortOrder]);
+
   // don't change, helper function to get the CSS class for the role badge
   const getRoleBadgeClass = (role: UserRole) => {
     if (role === "admin") return `${styles.roleBadge} ${styles.roleAdmin}`;
     if (role === "agent") return `${styles.roleBadge} ${styles.roleAgent}`;
     return `${styles.roleBadge} ${styles.roleViewer}`;
   };
+
+  if (loading) {
+    return <div>Loading users...</div>;
+  }
+
+  if (error) {
+    return <div>Error loading users: {error}</div>;
+  }
 
   return (
     <div className={styles.container}>
@@ -27,7 +60,7 @@ export function UserList() {
       <div className={styles.controls}>
         <label>
           Role
-          <select>
+          <select value={roleFilter} onChange={e => setRoleFilter(e.target.value as RoleFilter)}>
             <option value="">All Roles</option>
             <option value="admin">Admin</option>
             <option value="agent">Agent</option>
@@ -37,7 +70,7 @@ export function UserList() {
 
         <label>
           Sort by Name
-          <select>
+          <select value={sortOrder} onChange={e => setSortOrder(e.target.value as SortOrder)}>
             <option value="asc">A → Z</option>
             <option value="desc">Z → A</option>
           </select>
@@ -45,7 +78,8 @@ export function UserList() {
 
         <span className={styles.resultCount}>
           {/* 🔴 Todo: replace hardcoded count with actual count after filtering */}
-          3 users
+          {filteredAndSortedUsers.length} users
+          {filteredAndSortedUsers.length === 0 && <span> - No users found</span>}
         </span>
       </div>
       <table className={styles.table}>
@@ -60,33 +94,17 @@ export function UserList() {
         </thead>
         <tbody>
           {/* 🔴 TODO: replace hardcoded rows with filteredAndSorted.map() */}
-          <tr>
-            <td>Admin User</td>
-            <td>admin</td>
-            <td>admin@helpdesk.com</td>
-            <td>
-              <span className={getRoleBadgeClass("admin")}>admin</span>
-            </td>
-            <td>6/1/2026</td>
-          </tr>
-          <tr>
-            <td>Alice Johnson</td>
-            <td>alice</td>
-            <td>alice@helpdesk.com</td>
-            <td>
-              <span className={getRoleBadgeClass("agent")}>agent</span>
-            </td>
-            <td>6/1/2026</td>
-          </tr>
-          <tr>
-            <td>Dave Brown</td>
-            <td>dave</td>
-            <td>dave@helpdesk.com</td>
-            <td>
-              <span className={getRoleBadgeClass("viewer")}>viewer</span>
-            </td>
-            <td>6/1/2026</td>
-          </tr>
+          {filteredAndSortedUsers.map(user => (
+            <tr key={user.id}>
+              <td>{user.displayName}</td>
+              <td>{user.username}</td>
+              <td>{user.email}</td>
+              <td>
+                <span className={getRoleBadgeClass(user.role)}>{user.role}</span>
+              </td>
+              <td>{new Date(user.createdAt).toLocaleDateString()}</td>
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>
